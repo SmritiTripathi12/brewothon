@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi Section Slider — Neon Dark</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    :root{
+      --bg-0: #0b0f14;
+      --bg-1: #0f1720;
+      --card: rgba(255,255,255,0.04);
+      --card-2: rgba(255,255,255,0.03);
+      --muted: #97a0ad;
+      --glass-blur: 12px;
+      --accent-1: #7c5cff;   /* purple */
+      --accent-2: #00e6d9;   /* cyan */
+      --accent-3: #ff7ab6;   /* pink */
+      --glass-border: rgba(255,255,255,0.06);
+      --glow-strong: 0 10px 40px rgba(124,92,255,0.18);
+      --max-width: 1200px;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;color:#e6eef8;background:linear-gradient(180deg,var(--bg-0) 0%, #071018 100%);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale}
+
+    .slider-wrapper{
+      min-height:100vh;
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:48px 24px;
+      position:relative;
+      overflow:hidden;
+      background-image:
+        radial-gradient(800px 400px at 10% 10%, rgba(124,92,255,0.06), transparent 10%),
+        radial-gradient(600px 300px at 90% 90%, rgba(0,230,217,0.04), transparent 15%),
+        linear-gradient(180deg, rgba(0,0,0,0.15), transparent 30%);
+    }
+
+    /* Floating abstract shapes for depth */
+    .slider-wrapper::before,
+    .slider-wrapper::after{
+      content:'';
+      position:absolute;
+      pointer-events:none;
+      filter: blur(40px) saturate(115%);
+      opacity:0.45;
+      transform:translateZ(0);
+    }
+    .slider-wrapper::before{
+      width:650px;height:650px;right:-120px;top:-180px;
+      background:linear-gradient(135deg,var(--accent-1), transparent 40%);
+      border-radius:50%;
+      mix-blend-mode:screen;
+      animation: drift1 18s linear infinite;
+    }
+    .slider-wrapper::after{
+      width:520px;height:520px;left:-120px;bottom:-160px;
+      background:linear-gradient(135deg,var(--accent-2), transparent 40%);
+      border-radius:50%;
+      mix-blend-mode:screen;
+      animation: drift2 22s linear infinite;
+      opacity:0.35;
+    }
+    @keyframes drift1{0%{transform:translateY(0) rotate(0)}50%{transform:translateY(30px) rotate(8deg)}100%{transform:translateY(0) rotate(0)}}
+    @keyframes drift2{0%{transform:translateX(0) rotate(0)}50%{transform:translateX(-30px) rotate(-8deg)}100%{transform:translateX(0) rotate(0)}}
+
+    .slider-viewport{
+      width:100%;
+      max-width:var(--max-width);
+      height:calc(100vh - 120px);
+      min-height:520px;
+      border-radius:20px;
+      overflow:hidden;
+      position:relative;
+      box-shadow: 0 30px 120px rgba(0,0,0,0.6), var(--glow-strong);
+      border: 1px solid rgba(255,255,255,0.02);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .slider-container{
+      width:100%;
+      height:100%;
+      display:flex;
+      transition: transform 0.75s cubic-bezier(.22,.9,.32,1);
+      will-change: transform;
+    }
+
+    .slide{
+      min-width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:60px;
+      position:relative;
+      flex-shrink:0;
+    }
+
+    /* glass card */
+    .slide-content{
+      width:100%;
+      max-width:900px;
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:36px;
+      align-items:center;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:20px;
+      padding:36px;
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(var(--glass-blur)) saturate(1.1);
+      box-shadow: 0 8px 40px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      transform: translateY(20px) scale(0.995);
+      transition: all 0.7s cubic-bezier(.22,.9,.32,1);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .slide.active .slide-content{
+      transform: translateY(0) scale(1);
+    }
+
+    /* left image panel */
+    .slide-image{
+      height:420px;
+      border-radius:14px;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      position:relative;
+      background:linear-gradient(135deg,var(--accent-3), rgba(255,255,255,0.02));
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      flex-shrink:0;
+      border: 1px solid rgba(255,255,255,0.03);
+      isolation:isolate;
+    }
+
+    .slide-image img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      transform: scale(1.02);
+      transition: transform 0.9s ease;
+    }
+    .slide.active .slide-image img{ transform: scale(1); }
+
+    /* neon highlight line */
+    .slide-image::after{
+      content:'';
+      position:absolute;
+      inset:auto 0 0 0;
+      height:8px;
+      background: linear-gradient(90deg,var(--accent-1),var(--accent-2));
+      opacity:0.9;
+      filter: blur(10px);
+    }
+
+    /* text area */
+    .slide-body{
+      padding:8px 6px;
+    }
+
+    .slide-title{
+      font-size:28px;
+      letter-spacing: -0.02em;
+      color: #f4f8ff;
+      margin-bottom:12px;
+      font-weight:700;
+      text-shadow: 0 6px 18px rgba(92,72,255,0.12);
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .title-accent{
+      display:inline-block;
+      min-width:12px;
+      height:12px;
+      border-radius:4px;
+      background: linear-gradient(180deg,var(--accent-1), var(--accent-3));
+      box-shadow: 0 6px 24px rgba(124,92,255,0.18);
+    }
+
+    .slide-text{
+      color:var(--muted);
+      line-height:1.7;
+      margin-bottom:22px;
+      font-size:16px;
+      max-width:60ch;
+    }
+
+    .button-group{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+
+    .slide-button{
+      padding:12px 18px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.04);
+      font-weight:600;
+      cursor:pointer;
+      background:transparent;
+      color:#eaf5ff;
+      transition: all 0.25s ease;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    .primary{
+      background: linear-gradient(90deg,var(--accent-1),var(--accent-2));
+      color:#051224;
+      border: none;
+      box-shadow: 0 12px 40px rgba(124,92,255,0.18);
+    }
+    .secondary{
+      background: rgba(255,255,255,0.02);
+      color: #bcd7e9;
+    }
+
+    .slide-button:hover{ transform: translateY(-4px) scale(1.01); }
+
+    /* navigation arrows */
+    .nav-arrow{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:56px;height:56px;border-radius:16px;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;border: 1px solid rgba(255,255,255,0.04);
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      color: white;
+      font-size:22px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6);
+      z-index:15;
+      transition: all 0.28s cubic-bezier(.22,.9,.32,1);
+      backdrop-filter: blur(6px);
+    }
+    .nav-arrow.prev{ left:18px; }
+    .nav-arrow.next{ right:18px; }
+
+    .nav-arrow:hover{
+      transform: translateY(-50%) scale(1.06);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.6), 0 0 30px rgba(124,92,255,0.14);
+    }
+
+    .nav-arrow svg{ filter: drop-shadow(0 8px 30px rgba(0,0,0,0.6)); }
+
+    .nav-arrow:disabled{ opacity:0.35; cursor:not-allowed; transform:none; }
+
+    /* progress indicator */
+    .progress-indicator{
+      position:absolute;
+      bottom:18px;
+      left:50%; transform:translateX(-50%);
+      display:flex; gap:12px; z-index:18;
+      align-items:center;
+    }
+    .progress-dot{
+      width:14px;height:14px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.06);
+      box-shadow: inset 0 -8px 18px rgba(0,0,0,0.6);
+      transition: all 0.32s cubic-bezier(.22,.9,.32,1);
+      cursor:pointer;
+      position:relative;
+      overflow:hidden;
+    }
+    .progress-dot::after{
+      content:'';
+      position:absolute;inset:0;
+      background: linear-gradient(90deg,var(--accent-1),var(--accent-2));
+      transform:scaleX(0); transform-origin:left center;opacity:0.9;transition:transform .45s cubic-bezier(.22,.9,.32,1);
+      filter: blur(8px);
+    }
+    .progress-dot.active{ transform: scale(1.2); border-color: rgba(255,255,255,0.12); box-shadow: 0 6px 26px rgba(0,0,0,0.6), 0 0 22px rgba(0,230,217,0.06);}
+    .progress-dot.active::after{ transform:scaleX(1); }
+
+    /* small screens */
+    @media (max-width:880px){
+      .slide-content{ grid-template-columns: 1fr; padding:20px; gap:18px; }
+      .slide-image{ height:260px; border-radius:12px; }
+      .slider-viewport{ height:auto; min-height:480px; padding:24px; }
+      .slide-title{ font-size:20px }
+      .slide-text{ font-size:15px }
+    }
+    @media (max-width:520px){
+      .nav-arrow{ width:44px;height:44px;font-size:18px;border-radius:12px; }
+      .progress-dot{ width:12px;height:12px }
+      .slide-image{ height:220px }
+      .slider-viewport{ min-height:420px }
+    }
+
+    /* small subtle entrance animations */
+    .slide-content, .slide-image, .slide-title, .slide-text, .button-group { opacity:0; transform: translateY(10px); transition: all 0.7s cubic-bezier(.22,.9,.32,1) }
+    .slide.active .slide-content, .slide.active .slide-image, .slide.active .slide-title, .slide.active .slide-text, .slide.active .button-group {
+      opacity:1; transform: translateY(0);
+    }
+
+  </style>
+
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="slider-wrapper" id="sliderRoot">
+   <div class="slider-viewport" aria-roledescription="carousel">
+     <div class="slider-container" id="sliderContainer" role="list">
+      <!-- Slide items (keep these as before; images should exist in the same folder) -->
+      <div class="slide" role="listitem">
+       <div class="slide-content">
+        <div class="slide-image">
+         <img src="aibrewery.jpeg" alt="AI Brewery">
+        </div>
+        <div class="slide-body">
+         <h2 class="slide-title" data-field="section_1_title"><span class="title-accent"></span> AI Brewery</h2>
+         <p class="slide-text" data-field="section_1_text">Discover cutting-edge solutions that transform the way you work and live. Our platform brings together the best tools for your success.</p>
+         <div class="button-group">
+           <button class="slide-button primary" data-field="section_1_button_1">Mentor Kiran Sir</button>
+           <button class="slide-button secondary" data-field="section_1_button_2">80 Members</button>
+         </div>
+        </div>
+       </div>
+      </div>
+
+      <div class="slide" role="listitem">
+       <div class="slide-content">
+        <div class="slide-image">
+         <img src="music.jpeg" alt="Music">
+        </div>
+        <div class="slide-body">
+         <h2 class="slide-title" data-field="section_2_title"><span class="title-accent"></span> Destiny Music Club</h2>
+         <p class="slide-text" data-field="section_2_text">Harness the power of intelligent automation and data-driven insights to streamline your workflow and maximize productivity.</p>
+         <div class="button-group">
+           <button class="slide-button primary" data-field="section_2_button_1">90 Members</button>
+           <button class="slide-button secondary" data-field="section_2_button_2">Vibe</button>
+         </div>
+        </div>
+       </div>
+      </div>
+
+      <div class="slide" role="listitem">
+       <div class="slide-content">
+        <div class="slide-image">
+         <img src="decoders.jpeg" alt="Excellence">
+        </div>
+        <div class="slide-body">
+         <h2 class="slide-title" data-field="section_3_title"><span class="title-accent"></span> Decoders</h2>
+         <p class="slide-text" data-field="section_3_text">Experience unparalleled quality and performance with our premium services designed to exceed your expectations every time.</p>
+         <div class="button-group">
+           <button class="slide-button primary" data-field="section_3_button_1">50 Members</button>
+           <button class="slide-button secondary" data-field="section_3_button_2">Tech</button>
+         </div>
+        </div>
+       </div>
+      </div>
+
+      <div class="slide" role="listitem">
+       <div class="slide-content">
+        <div class="slide-image">
+         <img src="panthers.jpeg" alt="Goals">
+        </div>
+        <div class="slide-body">
+         <h2 class="slide-title" data-field="section_4_title"><span class="title-accent"></span>Panthers</h2>
+         <p class="slide-text" data-field="section_4_text">Set ambitious targets and reach them with our comprehensive toolkit. Track progress and celebrate milestones along the way.</p>
+         <div class="button-group">
+           <button class="slide-button primary" data-field="section_4_button_1">Start Free Trial</button>
+           <button class="slide-button secondary" data-field="section_4_button_2">See Pricing</button>
+         </div>
+        </div>
+       </div>
+      </div>
+
+      <div class="slide" role="listitem">
+       <div class="slide-content">
+        <div class="slide-image" style="display:flex;align-items:center;justify-content:center;font-size:72px">
+         <img src="technical_support_engineer.webp" alt="">
+        </div>
+        <div class="slide-body">
+         <h2 class="slide-title" data-field="section_5_title"><span class="title-accent"></span> Corsit</h2>
+         <p class="slide-text" data-field="section_5_text">Your data is protected with enterprise-grade security. Trust in our proven infrastructure that keeps your information safe 24/7.</p>
+         <div class="button-group">
+           <button class="slide-button primary" data-field="section_5_button_1">Security Details</button>
+           <button class="slide-button secondary" data-field="section_5_button_2">Compliance Info</button>
+         </div>
+        </div>
+       </div>
+      </div>
+
+      <div class="slide" role="listitem">
+       <div class="slide-content">
+        <div class="slide-image" style="display:flex;align-items:center;justify-content:center;font-size:72px">
+         <img src="Aurora.jpeg" alt="">
+        </div>
+        <div class="slide-body">
+         <h2 class="slide-title" data-field="section_6_title"><span class="title-accent"></span>Aurora</h2>
+         <p class="slide-text" data-field="section_6_text">Connect with thousands of users worldwide. Share experiences, get support, and grow together in our vibrant community.</p>
+         <div class="button-group">
+           <button class="slide-button primary" data-field="section_6_button_1">Join Now</button>
+           <button class="slide-button secondary" data-field="section_6_button_2">View Forum</button>
+         </div>
+        </div>
+       </div>
+      </div>
+
+      <div class="slide" role="listitem">
+       <div class="slide-content">
+        <div class="slide-image" style="display:flex;align-items:center;justify-content:center;font-size:72px">
+         🎉
+        </div>
+        <div class="slide-body">
+         <h2 class="slide-title" data-field="section_7_title"><span class="title-accent"></span> Ready to Begin?</h2>
+         <p class="slide-text" data-field="section_7_text">Take the first step towards transformation. Join thousands of satisfied customers who have already made the switch to excellence.</p>
+         <div class="button-group">
+           <button class="slide-button primary" data-field="section_7_button_1">Sign Up Free</button>
+           <button class="slide-button secondary" data-field="section_7_button_2">Schedule Call</button>
+         </div>
+        </div>
+       </div>
+      </div>
+
+     </div> <!-- slider-container -->
+     <button class="nav-arrow prev" id="prevBtn" aria-label="Previous slide">
+       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M15 6l-6 6 6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+     </button>
+     <button class="nav-arrow next" id="nextBtn" aria-label="Next slide">
+       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+     </button>
+
+     <div class="progress-indicator" id="progressIndicator" aria-hidden="false"></div>
+   </div><!-- slider-viewport -->
+  </div><!-- wrapper -->
+
+  <script>
+    // Config defaults (unchanged)
+    const defaultConfig = {
+      section_1_title: "Innovation Starts Here",
+      section_1_text: "Discover cutting-edge solutions that transform the way you work and live. Our platform brings together the best tools for your success.",
+      section_1_button_1: "Get Started",
+      section_1_button_2: "Learn More",
+      section_2_title: "Smart Solutions",
+      section_2_text: "Harness the power of intelligent automation and data-driven insights to streamline your workflow and maximize productivity.",
+      section_2_button_1: "Explore Features",
+      section_2_button_2: "Watch Demo",
+      section_3_title: "Excellence Delivered",
+      section_3_text: "Experience unparalleled quality and performance with our premium services designed to exceed your expectations every time.",
+      section_3_button_1: "View Plans",
+      section_3_button_2: "Contact Sales",
+      section_4_title: "Achieve Your Goals",
+      section_4_text: "Set ambitious targets and reach them with our comprehensive toolkit. Track progress and celebrate milestones along the way.",
+      section_4_button_1: "Start Free Trial",
+      section_4_button_2: "See Pricing",
+      section_5_title: "Secure & Reliable",
+      section_5_text: "Your data is protected with enterprise-grade security. Trust in our proven infrastructure that keeps your information safe 24/7.",
+      section_5_button_1: "Security Details",
+      section_5_button_2: "Compliance Info",
+      section_6_title: "Join Our Community",
+      section_6_text: "Connect with thousands of users worldwide. Share experiences, get support, and grow together in our vibrant community.",
+      section_6_button_1: "Join Now",
+      section_6_button_2: "View Forum",
+      section_7_title: "Ready to Begin?",
+      section_7_text: "Take the first step towards transformation. Join thousands of satisfied customers who have already made the switch to excellence.",
+      section_7_button_1: "Sign Up Free",
+      section_7_button_2: "Schedule Call"
+    };
+
+    let currentSlide = 0;
+    const sliderContainer = document.getElementById('sliderContainer');
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const totalSlides = slides.length;
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const progressIndicator = document.getElementById('progressIndicator');
+
+    // build dots
+    function createDots(){
+      progressIndicator.innerHTML = '';
+      for(let i=0;i<totalSlides;i++){
+        const dot = document.createElement('div');
+        dot.className = 'progress-dot';
+        dot.setAttribute('aria-label', `Go to slide ${i+1}`);
+        dot.addEventListener('click', ()=> goToSlide(i));
+        progressIndicator.appendChild(dot);
+      }
+    }
+
+    function updateSlider(animate = true){
+      // set transform
+      sliderContainer.style.transition = animate ? 'transform 0.75s cubic-bezier(.22,.9,.32,1)' : 'none';
+      sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+
+      // active classes
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+
+      // buttons
+      prevBtn.disabled = currentSlide === 0;
+      nextBtn.disabled = currentSlide === totalSlides - 1;
+
+      // dots
+      const dots = progressIndicator.querySelectorAll('.progress-dot');
+      dots.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+    }
+
+    function goToSlide(index){
+      currentSlide = Math.max(0, Math.min(index, totalSlides-1));
+      updateSlider();
+    }
+
+    prevBtn.addEventListener('click', ()=> { if(currentSlide>0) { currentSlide--; updateSlider(); }});
+    nextBtn.addEventListener('click', ()=> { if(currentSlide<totalSlides-1) { currentSlide++; updateSlider(); }});
+
+    // keyboard
+    document.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowLeft') prevBtn.click();
+      else if(e.key === 'ArrowRight') nextBtn.click();
+    });
+
+    // touch swipe support
+    (function enableSwipe(){
+      let startX = 0, deltaX = 0, isTouching = false;
+      sliderContainer.addEventListener('touchstart', (e)=>{ startX = e.touches[0].clientX; isTouching=true; sliderContainer.style.transition='none'; }, {passive:true});
+      sliderContainer.addEventListener('touchmove', (e)=>{ if(!isTouching) return; deltaX = e.touches[0].clientX - startX; sliderContainer.style.transform = `translateX(${ -currentSlide*100 + (deltaX / window.innerWidth) * 100 }%)`; }, {passive:true});
+      sliderContainer.addEventListener('touchend', ()=>{ isTouching=false; if(Math.abs(deltaX) > 60){ if(deltaX < 0 && currentSlide < totalSlides-1) currentSlide++; if(deltaX > 0 && currentSlide > 0) currentSlide--; } updateSlider(); deltaX = 0; }, {passive:true});
+    })();
+
+    // expose config changes to SDK
+    async function onConfigChange(config){
+      const elements = document.querySelectorAll('[data-field]');
+      elements.forEach(element => {
+        const field = element.getAttribute('data-field');
+        const value = (config && config[field]) || defaultConfig[field] || '';
+        // if it's a button, keep textContent; else set.
+        element.textContent = value;
+      });
+    }
+
+    if(window.elementSdk){
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: () => ({
+          recolorables: [],
+          borderables: [],
+          fontEditable: undefined,
+          fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (config) => {
+          const map = new Map();
+          Object.keys(defaultConfig).forEach(key => {
+            map.set(key, config ? (config[key] || defaultConfig[key]) : defaultConfig[key]);
+          });
+          return map;
+        }
+      });
+    }
+
+    // init
+    createDots();
+    updateSlider(false); // set initial positions (no animation)
+    // ensure first slide has active class
+    slides.forEach((s, i) => s.classList.toggle('active', i===0));
+
+    // optional: auto-play (comment out if not desired)
+    // let autoplay = true;
+    // if(autoplay){
+    //   setInterval(()=>{ if(currentSlide < totalSlides-1) currentSlide++; else currentSlide = 0; updateSlider(); }, 6000);
+    // }
+
+    // ensure images cover (in case of missing images, scale icons will remain)
+    document.querySelectorAll('.slide-image img').forEach(img=>{
+      img.addEventListener('error', ()=>{ img.style.display='none'; });
+    });
+
+  </script>
+</body>
+</html>
